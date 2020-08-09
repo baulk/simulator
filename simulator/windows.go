@@ -154,13 +154,3 @@ var allowedEnv = []string{
 	"SSH_AUTH_SOCK",
 	"SSH_AGENT_PID",
 }
-
-// initializeCleanupEnv todo
-func (de *Derivator) initializeCleanupEnv() {
-	for _, e := range allowedEnv {
-		if v, b := os.LookupEnv(e); b {
-			de.envblocks[e] = v
-		}
-	}
-	de.envblocks["HOME"] = os.Getenv("USERPROFILE")
-}

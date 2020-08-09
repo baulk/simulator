@@ -4,8 +4,14 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
+)
+
+// error
+var (
+	ErrKeyCannotEmpty = errors.New("key cannot be empty")
 )
 
 // Derivator expand env engine
@@ -38,7 +44,22 @@ func NewDerivator() *Derivator {
 		}
 		de.envblocks[key] = s[i+1:]
 	}
+	if runtime.GOOS == "windows" {
+		de.envblocks["home"] = os.Getenv("USERPROFILE")
+	}
 	return de
+}
+
+// initializeCleanupEnv todo
+func (de *Derivator) initializeCleanupEnv() {
+	for _, e := range allowedEnv {
+		if v, b := os.LookupEnv(e); b {
+			de.envblocks[e] = v
+		}
+	}
+	if runtime.GOOS == "windows" {
+		de.envblocks["home"] = os.Getenv("USERPROFILE")
+	}
 }
 
 // NewCleanupDerivator todo
@@ -52,29 +73,37 @@ func NewCleanupDerivator() *Derivator {
 }
 
 // InsertEnv insert
-func (de *Derivator) InsertEnv(key, val string) {
+func (de *Derivator) InsertEnv(key, val string) error {
+	if key == "" {
+		return ErrKeyCannotEmpty
+	}
 	if strings.EqualFold(key, "PATH") {
 		de.paths = append([]string{val}, de.paths...)
-		return
+		return nil
 	}
 	if v, ok := de.envblocks[key]; ok {
 		de.envblocks[key] = StrCat(val, string(os.PathListSeparator), v)
-		return
+		return nil
 	}
 	de.envblocks[key] = val
+	return nil
 }
 
 // AppendEnv append
-func (de *Derivator) AppendEnv(key, val string) {
+func (de *Derivator) AppendEnv(key, val string) error {
+	if key == "" {
+		return ErrKeyCannotEmpty
+	}
 	if strings.EqualFold(key, "PATH") {
 		de.paths = append(de.paths, val)
-		return
+		return nil
 	}
 	if v, ok := de.envblocks[key]; ok {
 		de.envblocks[key] = StrCat(v, string(os.PathListSeparator), val)
-		return
+		return nil
 	}
 	de.envblocks[key] = val
+	return nil
 }
 
 // AddBashCompatible $0~$9
@@ -87,8 +116,8 @@ func (de *Derivator) AddBashCompatible() {
 
 // SetEnv env
 func (de *Derivator) SetEnv(k, v string) error {
-	if k == "" || v == "" {
-		return errors.New("empty env k/v input")
+	if k == "" {
+		return ErrKeyCannotEmpty
 	}
 	de.envblocks[k] = v
 	return nil
@@ -105,16 +134,23 @@ func (de *Derivator) Environ() []string {
 }
 
 // EraseEnv k
-func (de *Derivator) EraseEnv(k string) {
-	delete(de.envblocks, k)
+func (de *Derivator) EraseEnv(key string) error {
+	if key == "" {
+		return ErrKeyCannotEmpty
+	}
+	delete(de.envblocks, key)
+	return nil
 }
 
 // GetEnv env
-func (de *Derivator) GetEnv(k string) string {
-	if v, ok := de.envblocks[k]; ok {
+func (de *Derivator) GetEnv(key string) string {
+	if key == "" {
+		return ""
+	}
+	if v, ok := de.envblocks[key]; ok {
 		return v
 	}
-	return os.Getenv(k)
+	return ""
 }
 
 // ExpandEnv env
