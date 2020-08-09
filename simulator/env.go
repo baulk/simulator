@@ -33,7 +33,7 @@ func NewDerivator() *Derivator {
 			continue
 		}
 		key := s[0:i]
-		if strings.EqualFold(key, "path") {
+		if strings.EqualFold(key, "PATH") {
 			continue
 		}
 		de.envblocks[key] = s[i+1:]
@@ -41,21 +41,40 @@ func NewDerivator() *Derivator {
 	return de
 }
 
+// NewCleanupDerivator todo
+func NewCleanupDerivator() *Derivator {
+	de := &Derivator{
+		envblocks: make(map[string]string),
+	}
+	de.initializeCleanupEnv()
+	de.paths = MakeCleanupPath()
+	return de
+}
+
 // InsertEnv insert
-func (de *Derivator) InsertEnv(key, p string) {
+func (de *Derivator) InsertEnv(key, val string) {
 	if strings.EqualFold(key, "PATH") {
-		de.paths = append([]string{p}, de.paths...)
+		de.paths = append([]string{val}, de.paths...)
 		return
 	}
+	if v, ok := de.envblocks[key]; ok {
+		de.envblocks[key] = StrCat(val, string(os.PathListSeparator), v)
+		return
+	}
+	de.envblocks[key] = val
 }
 
 // AppendEnv append
-func (de *Derivator) AppendEnv(key, p string) {
+func (de *Derivator) AppendEnv(key, val string) {
 	if strings.EqualFold(key, "PATH") {
-		de.paths = append(de.paths, p)
+		de.paths = append(de.paths, val)
 		return
 	}
-
+	if v, ok := de.envblocks[key]; ok {
+		de.envblocks[key] = StrCat(v, string(os.PathListSeparator), val)
+		return
+	}
+	de.envblocks[key] = val
 }
 
 // AddBashCompatible $0~$9

@@ -90,3 +90,77 @@ func (de *Derivator) PathListExists(p string) bool {
 	}
 	return false
 }
+
+// MakeCleanupPath make cleanup
+func MakeCleanupPath() []string {
+	systemRoot := os.Getenv("SystemRoot")
+	return []string{
+		StrCat(systemRoot, "\\System32"),
+		systemRoot,
+		StrCat(systemRoot, "\\System32\\Wbem"),
+		StrCat(systemRoot, "\\WindowsPowerShell\\v1.0"),
+	}
+}
+
+var allowedEnv = []string{
+	"ALLUSERSPROFILE",
+	"APPDATA",
+	"CommonProgramFiles",
+	"CommonProgramFiles(x86)",
+	"CommonProgramW6432",
+	"COMPUTERNAME",
+	"ComSpec",
+	"HOMEDRIVE",
+	"HOMEPATH",
+	"LOCALAPPDATA",
+	"LOGONSERVER",
+	"NUMBER_OF_PROCESSORS",
+	"OS",
+	"PATHEXT",
+	"PROCESSOR_ARCHITECTURE",
+	"PROCESSOR_ARCHITEW6432",
+	"PROCESSOR_IDENTIFIER",
+	"PROCESSOR_LEVEL",
+	"PROCESSOR_REVISION",
+	"ProgramData",
+	"ProgramFiles",
+	"ProgramFiles(x86)",
+	"ProgramW6432",
+	"PROMPT",
+	"PSModulePath",
+	"PUBLIC",
+	"SystemDrive",
+	"SystemRoot",
+	"TEMP",
+	"TMP",
+	"USERDNSDOMAIN",
+	"USERDOMAIN",
+	"USERDOMAIN_ROAMINGPROFILE",
+	"USERNAME",
+	"USERPROFILE",
+	"windir",
+	// Windows Terminal
+	"SESSIONNAME",
+	"WT_SESSION",
+	"WSLENV",
+	// Enables proxy information to be passed to Curl, the underlying download
+	// library in cmake.exe
+	"http_proxy",
+	"https_proxy",
+	// Environment variables to tell git to use custom SSH executable or command
+	"GIT_SSH",
+	"GIT_SSH_COMMAND",
+	// Environment variables needed for ssh-agent based authentication
+	"SSH_AUTH_SOCK",
+	"SSH_AGENT_PID",
+}
+
+// initializeCleanupEnv todo
+func (de *Derivator) initializeCleanupEnv() {
+	for _, e := range allowedEnv {
+		if v, b := os.LookupEnv(e); b {
+			de.envblocks[e] = v
+		}
+	}
+	de.envblocks["HOME"] = os.Getenv("USERPROFILE")
+}

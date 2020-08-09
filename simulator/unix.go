@@ -55,3 +55,47 @@ func (de *Derivator) PathListExists(p string) bool {
 	}
 	return false
 }
+
+// MakeCleanupPath make cleanup
+func MakeCleanupPath() []string {
+	return []string{
+		"/usr/local/sbin",
+		"/usr/local/bin",
+		"/usr/sbin",
+		"/usr/bin",
+		"/sbin",
+		"/bin",
+	}
+}
+
+var allowedEnv = []string{
+	"HOSTTYPE",
+	"LANG",
+	"TERM",
+	"NAME",
+	"HOME",
+	"USER",
+	"LONGNAME",
+	"SHELL",
+	"TZ",
+	"LD_LIBRARY_PATH",
+	// Enables proxy information to be passed to Curl, the underlying download
+	// library in cmake.exe
+	"http_proxy",
+	"https_proxy",
+	// Environment variables to tell git to use custom SSH executable or command
+	"GIT_SSH",
+	"GIT_SSH_COMMAND",
+	// Environment variables needed for ssh-agent based authentication
+	"SSH_AUTH_SOCK",
+	"SSH_AGENT_PID",
+}
+
+// initializeCleanupEnv todo
+func (de *Derivator) initializeCleanupEnv() {
+	for _, e := range allowedEnv {
+		if v, b := os.LookupEnv(e); b {
+			de.envblocks[e] = v
+		}
+	}
+}
