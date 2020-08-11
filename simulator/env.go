@@ -18,6 +18,7 @@ var (
 type Simulator struct {
 	envmap map[string]string
 	paths  []string
+	home   string
 }
 
 // NewSimulator create env simulator
@@ -39,13 +40,14 @@ func NewSimulator() *Simulator {
 			continue
 		}
 		key := s[0:i]
+		if strings.EqualFold(key, "HOME") || strings.EqualFold(key, "USERPROFILE") {
+			sm.home = s[i+1:]
+			continue
+		}
 		if strings.EqualFold(key, "PATH") {
 			continue
 		}
 		sm.envmap[key] = s[i+1:]
-	}
-	if runtime.GOOS == "windows" {
-		sm.envmap["home"] = os.Getenv("USERPROFILE")
 	}
 	return sm
 }
@@ -57,8 +59,11 @@ func (sm *Simulator) initializeCleanupEnv() {
 			sm.envmap[e] = v
 		}
 	}
+
 	if runtime.GOOS == "windows" {
-		sm.envmap["home"] = os.Getenv("USERPROFILE")
+		sm.home = os.Getenv("USERPROFILE")
+	} else {
+		sm.home = os.Getenv("HOME")
 	}
 }
 
@@ -125,9 +130,17 @@ func (sm *Simulator) SetEnv(k, v string) error {
 
 // Environ create new environ block
 func (sm *Simulator) Environ() []string {
-	ev := make([]string, 0, len(sm.envmap)+1)
+	ev := make([]string, 0, len(sm.envmap)+3)
+	var hasUserProfile bool
 	for k, v := range sm.envmap {
+		if strings.EqualFold(k, "USERPROFILE") {
+			hasUserProfile = true
+		}
 		ev = append(ev, StrCat(k, "=", v))
+	}
+	ev = append(ev, StrCat("HOME=", sm.home))
+	if runtime.GOOS == "windows" && !hasUserProfile {
+		ev = append(ev, StrCat("USERPROFILE=", sm.home))
 	}
 	ev = append(ev, StrCat("PATH=", strings.Join(sm.paths, string(os.PathListSeparator))))
 	return ev
@@ -142,6 +155,17 @@ func (sm *Simulator) EraseEnv(key string) error {
 	return nil
 }
 
+// LookupEnv lookup env
+func (sm *Simulator) LookupEnv(key string) (string, bool) {
+	if key == "" {
+		return "", false
+	}
+	if v, ok := sm.envmap[key]; ok {
+		return v, true
+	}
+	return "", false
+}
+
 // GetEnv env
 func (sm *Simulator) GetEnv(key string) string {
 	if key == "" {
@@ -153,7 +177,24 @@ func (sm *Simulator) GetEnv(key string) string {
 	return ""
 }
 
+// SetHome simulate home
+func (sm *Simulator) SetHome(home string) string {
+	h := sm.home
+	sm.home = home
+	return h
+}
+
 // ExpandEnv env
 func (sm *Simulator) ExpandEnv(s string) string {
 	return os.Expand(s, sm.GetEnv)
+}
+
+// Paths return paths
+func (sm *Simulator) Paths() []string {
+	return sm.paths
+}
+
+// Home return home dir
+func (sm *Simulator) Home() string {
+	return sm.home
 }

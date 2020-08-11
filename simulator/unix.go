@@ -73,7 +73,6 @@ var allowedEnv = []string{
 	"LANG",
 	"TERM",
 	"NAME",
-	"HOME",
 	"USER",
 	"LONGNAME",
 	"SHELL",
