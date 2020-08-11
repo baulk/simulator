@@ -21,7 +21,7 @@ func findExecutable(file string) error {
 }
 
 // LookPath look path
-func (de *Derivator) LookPath(file string) (string, error) {
+func (sm *Simulator) LookPath(file string) (string, error) {
 	// NOTE(rsc): I wish we could use the Plan 9 behavior here
 	// (only bypass the path if file begins with / or ./ or ../)
 	// but that would not match all the Unix shells.
@@ -33,7 +33,7 @@ func (de *Derivator) LookPath(file string) (string, error) {
 		}
 		return "", &Error{file, err}
 	}
-	for _, dir := range de.paths {
+	for _, dir := range sm.paths {
 		if dir == "" {
 			// Unix shell semantics: path element "" means "."
 			dir = "."
@@ -47,8 +47,8 @@ func (de *Derivator) LookPath(file string) (string, error) {
 }
 
 // PathListExists path exists
-func (de *Derivator) PathListExists(p string) bool {
-	for _, s := range de.paths {
+func (sm *Simulator) PathListExists(p string) bool {
+	for _, s := range sm.paths {
 		if s == p {
 			return true
 		}
@@ -79,14 +79,14 @@ var allowedEnv = []string{
 	"SHELL",
 	"TZ",
 	"LD_LIBRARY_PATH",
-	// Enables proxy information to be passed to Curl, the underlying download
+	// Enables proxy information to be passed to Curl, the unsmrlying download
 	// library in cmake.exe
 	"http_proxy",
 	"https_proxy",
 	// Environment variables to tell git to use custom SSH executable or command
 	"GIT_SSH",
 	"GIT_SSH_COMMAND",
-	// Environment variables needed for ssh-agent based authentication
+	// Environment variables neesmd for ssh-agent based authentication
 	"SSH_AUTH_SOCK",
 	"SSH_AGENT_PID",
 }

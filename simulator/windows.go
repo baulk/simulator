@@ -46,7 +46,7 @@ func findExecutable(file string, exts []string) (string, error) {
 }
 
 // LookPath look path
-func (de *Derivator) LookPath(file string) (string, error) {
+func (sm *Simulator) LookPath(file string) (string, error) {
 	var exts []string
 	x := os.Getenv(`PATHEXT`)
 	if x != "" {
@@ -73,7 +73,7 @@ func (de *Derivator) LookPath(file string) (string, error) {
 	if f, err := findExecutable(filepath.Join(".", file), exts); err == nil {
 		return f, nil
 	}
-	for _, dir := range de.paths {
+	for _, dir := range sm.paths {
 		if f, err := findExecutable(filepath.Join(dir, file), exts); err == nil {
 			return f, nil
 		}
@@ -82,8 +82,8 @@ func (de *Derivator) LookPath(file string) (string, error) {
 }
 
 // PathListExists path exists
-func (de *Derivator) PathListExists(p string) bool {
-	for _, s := range de.paths {
+func (sm *Simulator) PathListExists(p string) bool {
+	for _, s := range sm.paths {
 		if strings.EqualFold(s, p) {
 			return true
 		}

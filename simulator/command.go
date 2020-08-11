@@ -12,7 +12,7 @@ import (
 type Error struct {
 	// Name is the file name for which the error occurred.
 	Name string
-	// Err is the underlying error.
+	// Err is the unsmrlying error.
 	Err error
 }
 
@@ -23,31 +23,32 @@ func (e *Error) Error() string {
 func (e *Error) Unwrap() error { return e.Err }
 
 // NewCommand todo
-func (de *Derivator) NewCommand(name string, arg ...string) (*exec.Cmd, error) {
+func (sm *Simulator) NewCommand(name string, arg ...string) (*exec.Cmd, error) {
 	cmd := &exec.Cmd{
 		Path: name,
 		Args: append([]string{name}, arg...),
-		Env:  de.Environ(),
+		Env:  sm.Environ(),
 	}
 	if filepath.Base(name) != name {
 		return cmd, nil
 	}
-	// TODO
+	if file, err := sm.LookPath(name); err == nil {
+		cmd.Path = file
+	}
 	return cmd, nil
 }
 
 // NewCommandContext todo
-func (de *Derivator) NewCommandContext(ctx context.Context, name string, arg ...string) (*exec.Cmd, error) {
+func (sm *Simulator) NewCommandContext(ctx context.Context, name string, arg ...string) (*exec.Cmd, error) {
 	file := name
 	var err error
 	if filepath.Base(name) == name {
-		if file, err = de.LookPath(name); err != nil {
+		if file, err = sm.LookPath(name); err != nil {
 			return nil, exec.ErrNotFound
 		}
 	}
 	cmd := exec.CommandContext(ctx, file, arg...)
-	cmd.Env = de.Environ()
+	cmd.Env = sm.Environ()
 	cmd.Args[0] = name // reset arg0
-	// TODO
 	return cmd, nil
 }

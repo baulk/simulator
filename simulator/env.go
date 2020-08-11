@@ -14,23 +14,23 @@ var (
 	ErrKeyCannotEmpty = errors.New("key cannot be empty")
 )
 
-// Derivator expand env engine
-type Derivator struct {
-	envblocks map[string]string
-	paths     []string
+// Simulator expand env engine
+type Simulator struct {
+	envmap map[string]string
+	paths  []string
 }
 
-// NewDerivator create env derivative
-func NewDerivator() *Derivator {
-	de := &Derivator{
-		envblocks: make(map[string]string),
+// NewSimulator create env simulator
+func NewSimulator() *Simulator {
+	sm := &Simulator{
+		envmap: make(map[string]string),
 	}
 	pv := filepath.SplitList(os.Getenv("PATH"))
-	de.paths = make([]string, 0, len(pv))
+	sm.paths = make([]string, 0, len(pv))
 	for _, p := range pv {
 		cp := filepath.Clean(p)
-		if !de.PathListExists(cp) {
-			de.paths = append(de.paths, p)
+		if !sm.PathListExists(cp) {
+			sm.paths = append(sm.paths, p)
 		}
 	}
 	for _, s := range os.Environ() {
@@ -42,118 +42,118 @@ func NewDerivator() *Derivator {
 		if strings.EqualFold(key, "PATH") {
 			continue
 		}
-		de.envblocks[key] = s[i+1:]
+		sm.envmap[key] = s[i+1:]
 	}
 	if runtime.GOOS == "windows" {
-		de.envblocks["home"] = os.Getenv("USERPROFILE")
+		sm.envmap["home"] = os.Getenv("USERPROFILE")
 	}
-	return de
+	return sm
 }
 
 // initializeCleanupEnv todo
-func (de *Derivator) initializeCleanupEnv() {
+func (sm *Simulator) initializeCleanupEnv() {
 	for _, e := range allowedEnv {
 		if v, b := os.LookupEnv(e); b {
-			de.envblocks[e] = v
+			sm.envmap[e] = v
 		}
 	}
 	if runtime.GOOS == "windows" {
-		de.envblocks["home"] = os.Getenv("USERPROFILE")
+		sm.envmap["home"] = os.Getenv("USERPROFILE")
 	}
 }
 
-// NewCleanupDerivator todo
-func NewCleanupDerivator() *Derivator {
-	de := &Derivator{
-		envblocks: make(map[string]string),
+// NewCleanupSimulator todo
+func NewCleanupSimulator() *Simulator {
+	sm := &Simulator{
+		envmap: make(map[string]string),
 	}
-	de.initializeCleanupEnv()
-	de.paths = MakeCleanupPath()
-	return de
+	sm.initializeCleanupEnv()
+	sm.paths = MakeCleanupPath()
+	return sm
 }
 
 // InsertEnv insert
-func (de *Derivator) InsertEnv(key, val string) error {
+func (sm *Simulator) InsertEnv(key, val string) error {
 	if key == "" {
 		return ErrKeyCannotEmpty
 	}
 	if strings.EqualFold(key, "PATH") {
-		de.paths = append([]string{val}, de.paths...)
+		sm.paths = append([]string{val}, sm.paths...)
 		return nil
 	}
-	if v, ok := de.envblocks[key]; ok {
-		de.envblocks[key] = StrCat(val, string(os.PathListSeparator), v)
+	if v, ok := sm.envmap[key]; ok {
+		sm.envmap[key] = StrCat(val, string(os.PathListSeparator), v)
 		return nil
 	}
-	de.envblocks[key] = val
+	sm.envmap[key] = val
 	return nil
 }
 
 // AppendEnv append
-func (de *Derivator) AppendEnv(key, val string) error {
+func (sm *Simulator) AppendEnv(key, val string) error {
 	if key == "" {
 		return ErrKeyCannotEmpty
 	}
 	if strings.EqualFold(key, "PATH") {
-		de.paths = append(de.paths, val)
+		sm.paths = append(sm.paths, val)
 		return nil
 	}
-	if v, ok := de.envblocks[key]; ok {
-		de.envblocks[key] = StrCat(v, string(os.PathListSeparator), val)
+	if v, ok := sm.envmap[key]; ok {
+		sm.envmap[key] = StrCat(v, string(os.PathListSeparator), val)
 		return nil
 	}
-	de.envblocks[key] = val
+	sm.envmap[key] = val
 	return nil
 }
 
 // AddBashCompatible $0~$9
-func (de *Derivator) AddBashCompatible() {
+func (sm *Simulator) AddBashCompatible() {
 	for i := 0; i < len(os.Args); i++ {
-		de.envblocks[strconv.Itoa(i)] = os.Args[i]
+		sm.envmap[strconv.Itoa(i)] = os.Args[i]
 	}
-	de.envblocks["$"] = strconv.Itoa(os.Getpid())
+	sm.envmap["$"] = strconv.Itoa(os.Getpid())
 }
 
 // SetEnv env
-func (de *Derivator) SetEnv(k, v string) error {
+func (sm *Simulator) SetEnv(k, v string) error {
 	if k == "" {
 		return ErrKeyCannotEmpty
 	}
-	de.envblocks[k] = v
+	sm.envmap[k] = v
 	return nil
 }
 
 // Environ create new environ block
-func (de *Derivator) Environ() []string {
-	ev := make([]string, 0, len(de.envblocks)+1)
-	for k, v := range de.envblocks {
+func (sm *Simulator) Environ() []string {
+	ev := make([]string, 0, len(sm.envmap)+1)
+	for k, v := range sm.envmap {
 		ev = append(ev, StrCat(k, "=", v))
 	}
-	ev = append(ev, StrCat("PATH=", strings.Join(de.paths, string(os.PathListSeparator))))
+	ev = append(ev, StrCat("PATH=", strings.Join(sm.paths, string(os.PathListSeparator))))
 	return ev
 }
 
 // EraseEnv k
-func (de *Derivator) EraseEnv(key string) error {
+func (sm *Simulator) EraseEnv(key string) error {
 	if key == "" {
 		return ErrKeyCannotEmpty
 	}
-	delete(de.envblocks, key)
+	delete(sm.envmap, key)
 	return nil
 }
 
 // GetEnv env
-func (de *Derivator) GetEnv(key string) string {
+func (sm *Simulator) GetEnv(key string) string {
 	if key == "" {
 		return ""
 	}
-	if v, ok := de.envblocks[key]; ok {
+	if v, ok := sm.envmap[key]; ok {
 		return v
 	}
 	return ""
 }
 
 // ExpandEnv env
-func (de *Derivator) ExpandEnv(s string) string {
-	return os.Expand(s, de.GetEnv)
+func (sm *Simulator) ExpandEnv(s string) string {
+	return os.Expand(s, sm.GetEnv)
 }
